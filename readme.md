@@ -3,7 +3,7 @@ High-Performance LINPACK Tutorial
 
 ## Overview
 
-This document details how to setup and run a simple High-Performance LINPACK (HPL) test on a set of nodes in order to measure performance. This tutorial is tailored to the computing environment (Intel architecture, Scientific Linux 7) in the HPCS division at Lawrence Berkeley National Laboratory at the time of this writing, but the majority can be applied elsewhere. View the sample files for examples.
+This document details how to setup and run a simple High-Performance LINPACK (HPL) test on a set of nodes in order to measure performance, specifically, its rate of execution of floating-point operations, by using the nodes to solve a large linear system. This tutorial is tailored to the computing environment (Intel architecture, Scientific Linux 7) in the HPCS division at Lawrence Berkeley National Laboratory at the time of this writing, but the majority can be applied elsewhere. View the sample files for examples.
 
 ## 1. Loading Modules
 
@@ -31,7 +31,7 @@ Make the following changes to `Make.intel64`:
 - Change `TOPdir` from `$(HOME)/hpl` to the absolute path to your `hpl-2.2` directory.
 - In `LAlib`, change `libmkl_intel_thread.a` to `libmkl_sequential.a`.
 - Change `CC` from `mpiicc` to `mpicc`.
-- Change `OMP_DEFS` from `-openmp` to `qopenmp`.
+- Change `OMP_DEFS` from `-openmp` to `-qopenmp`.
 
 In `hpl-2.2`, compile the program by running:
 
@@ -40,8 +40,6 @@ make arch=intel64
 ```
 
 If compilation succeeds, the directory `hpl-2.2/bin/intel64` should now exist. In it you will find the files `HPL.dat` and `xhpl`. At this point, you require only these two files; that is, you can copy and run them from anywhere.
-
-Sample Make.intel64.
 
 ## 3. Gathering Parameters
 
@@ -60,18 +58,20 @@ This value will be the only one to vary between multiple tests on the same clust
 **Cores Per Node**
 
 ```
-cat /proc/cpuinfo
+lscpu
 ```
-Look at the final entry under `processor` and add 1.
+
+Look at the value corresponding to `CPU(s)`.
 
 ***
 
 **Speed Per Core**
 
 ```
-cat /proc/cpuinfo
+lscpu
 ```
-Look under `model name` for the number of GHz.
+
+Look at number of GHz in the value corresponding to `Model name`.
 
 ***
 
@@ -80,6 +80,7 @@ Look under `model name` for the number of GHz.
 ```
 cat /proc/meminfo
 ```
+
 Look at `MemTotal` and round down to the closest power of 2 (e.g. 214477800 kB becomes 192000000 kB = 192 GB).
 
 ***
@@ -92,26 +93,28 @@ Choose either 16 or 32, depending on the machine.
 
 Navigate to http://hpl-calculator.sourceforge.net/. Input the values you found above. Click on “More Details (Running HPL)”. Here you will find the parameters for your test.
 
+Note that behavior is unclear when nodes being tested have different parameters.
+
 ## 4. Editing HPL.dat
 
 We now need to edit `HPL.dat`. In particular, we will change the lines labeled `Ns`, `NBs`, `Ps`, and `Qs`.
 
-Look back at the results of the HPL Calculator. In the bottommost table, we find various “problem sizes”, which vary with `N` and `NB`. In general, and for the sake of this tutorial, `N` = 90% and `N` = 192 tend to be good choices. In `HPL.dat`, set `Ns` to be the value corresponding to 90% in the table. Set `NBs` to 192.
+Look back at the results of the HPL Calculator. In the bottommost table, we find various “problem sizes”, which vary with `N` and `NB`, where `N` is the order of the coefficient matrix  `A` being solved, and `NB` is the partitioning block factor. In general, and for the sake of this tutorial, `N` = 90% and `NB` = 192 tend to be good choices. Find the value corresponding to these in the table. In `HPL.dat`, set `Ns` to be that value and set `NBs` to 192.
 
-We want `P` and `Q` to be approximately equal, with `Q` slightly larger than `P`. Compute the square root of the product of the number of nodes and the number of cores per node. Choose `P` and `Q` as close to this value as possible. Set `Ps` and `Qs` in `HPL.dat`.
+`P` and `Q` correspond to the number of process rows and columns, respectively. We want `P` and `Q` to be approximately equal, with `Q` slightly larger than `P`. Compute the square root of the product of the number of nodes and the number of cores per node. Choose `P` and `Q` as close to this value as possible. Set `Ps` and `Qs` in `HPL.dat`.
 
 ## 5. Creating a Node List
 
 Create a file `nodelist.in` to contain the list of nodes to be included in the test. List each node on a separate line, with the number of cores it has listed next to it, denoted by `slots=`.
 
-Consider a cluster of 5 nodes denoted by `node_i`, where each has 64 cores. Then `nodelist.in` should contain:
+Consider a cluster of 5 nodes denoted by `n000i.cluster_name`, where each has 64 cores. Then `nodelist.in` should contain:
 
 ```
-node_0 slots=64
-node_1 slots=64
-node_2 slots=64
-node_3 slots=64
-node_4 slots=64
+n0000.cluster_name slots=64
+n0001.cluster_name slots=64
+n0002.cluster_name slots=64
+n0003.cluster_name slots=64
+n0004.cluster_name slots=64
 ```
 
 ## 6. Running the Test
@@ -143,7 +146,7 @@ Periodically check the progress of a test running in the background using:
 tail -f output.out
 ```
 
-## 7. Recording Output
+## 7. Interpreting Output
 
 Once the test is complete, the output should end in a similar fashion to below:
 
@@ -188,7 +191,7 @@ Record the following values, which will give you the beginning of an idea as to 
 
 **Progress**
 
-The value labeled `Gflops` in the last line before the test completed. E.g.:
+The rate of execution labeled `Gflops` in the last line before the test completed. E.g.:
 
 ```
 Column=000083712 Fraction=99.8% Gflops=3.657e+02
@@ -198,7 +201,7 @@ Column=000083712 Fraction=99.8% Gflops=3.657e+02
 
 **Time**
 
-The value labeled `Time` in the line beginning with `WR`. E.g.:
+The time in seconds to solve the linear system, labeled `Time` in the final result. E.g.:
 
 ```
 ================================================================================
@@ -211,7 +214,7 @@ WR00C2R4       83904   192     2     4            2310.54              1.704e+02
 
 **WR Number**
 
-The value labeled `Gflops` in the line beginning with `WR`. E.g.:
+The rate of execution for solving the linear system, labeled `Gflops` in the final result. E.g.:
 
 ```
 ================================================================================
@@ -222,14 +225,107 @@ WR00C2R4       83904   192     2     4            2310.54              1.704e+02
 
 ***
 
-**Gflops Per Node**
+**Gflop/s Per Node**
 
-The WR Number divided by the number of nodes used in the test.
+The rate of execution for solving the linear system, averaged across all nodes used in the test. E.g.:
+
+```
+gflops_per_node = wr_number / number_of_nodes
+```
 
 ***
 
 **Theoretical RPeak**
 
-The number under 100% RPeak, found from the HPL Calculator.
+The theoretical maximum performance, in Glop/s, achievable by the set of nodes, is, in the simplest case, given by the formula below. It can also be found in the results of the HPL Calculator, under `100% (RPeak)`.
+
+```
+RPeak = number_of_nodes * cores_per_node * speed_per_core * instructions_per_cycle
+```
+
+For example, the Theoretical RPeak for a set of 4 nodes, each with 64 cores running at 3.0 GHz and 16 instructions per cycle, is given by:
+
+```
+RPeak = 4 * 64 * 3 * 16 = 12288
+```
+
+This may differ in the presence of additional factors: Advanced Vector Extensions, wherein some instructions may span more than one clock cycle; turbo; etc.
 
 ***
+
+Record these results, as well as the parameters used in running the test.
+
+## Example
+
+Suppose we wish to run HPL on n0[175-183].etna0. We login to one of the nodes being tested. Using `lscpu` and `cat /proc/meminfo`, we find that each has Intel(R) Xeon(R) CPU E5-2623 v3 @ 3.00GHz. There are 9 nodes, each with 64 GB of memory and 8 cores running at 3.00 GHz and 16 instructions per cycle.
+
+We begin by running the test on a single node, and then repeatedly scale up by a factor of 2 while possible: 1, 2, 4, 8, 9. In total, in this case, we run 5 tests.
+
+### One Node
+
+Inserting the parameters into the HPL Calculator reveals that `Ps` = 2, `Qs` = 4, `Ns` = 83328, `NBs` = 192, each of which we set in `HPL.dat`.
+
+For the single node case, a node list is unnecessary, so we run:
+
+```
+mpirun -np 8 ./xhpl
+```
+
+The relevant excerpt of the output is below:
+
+```
+Column=000083712 Fraction=99.8% Gflops=3.657e+02
+================================================================================
+T/V                N    NB     P     Q               Time                 Gflops
+--------------------------------------------------------------------------------
+WR00C2R4       83904   192     2     4            2310.54              1.704e+02
+```
+
+The Theoretical RPeak is 384.
+
+### Two Nodes
+
+Inserting the parameters into the HPL Calculator reveals that `Ps` = 4, `Qs` = 4, `Ns` = 118848, `NBs` = 192, each of which we set in `HPL.dat`.
+
+For multiple nodes, a node list is necessary:
+
+```
+n0175.etna0 slots=8
+n0176.etna0 slots=8
+```
+
+We run:
+
+```
+mpirun -np 16 -hostfile nodelist_n0[175-176] ./xhpl
+```
+
+The relevant excerpt of the output is below:
+
+```
+Column=000118656 Fraction=99.8% Gflops=7.296e+02
+================================================================================
+T/V                N    NB     P     Q               Time                 Gflops
+--------------------------------------------------------------------------------
+WR00C2R4      118848   192     4     4            3839.37              2.915e+02
+```
+
+The Theoretical RPeak is 768.
+
+### More Nodes
+
+We repeat this process for 4, 8, and 9 nodes.
+
+### Recording Output
+
+We record output in a spreadsheet, as below:
+
+```
+n0[175-183].etna0 [Nodes: 9 | Cores/Node: 8 | Speed: 3.0GHz | Memory/Node: 64GB | Instructions/Cycle: 16]
+Date        # Nodes    P * Q    P    Q    N (Problem Size)    NB (Block Size)    Progress (Gflops)    WR (Gflops)    Time       Gflops/Node    Theoretical RPeak    Command
+01/08/18    1          8        2    4    83904               192                3.66E+02             1.70E+02       2310.54    170.4          384                  mpirun -np 8 ./xhpl
+01/08/18    2          16       4    4    118848              192                7.30E+02             2.92E+02       3839.37    145.75         768                  mpirun -np 16 -hostfile nodelist_n0[175-176] ./xhpl
+01/12/18    4          32       4    8    166656              192                1.47E+03             6.34E+02       4867.8     1.58E+02       1536                 mpirun -np 32 -hostfile nodelist_n0[175-178] ./xhpl
+01/12/18    8          64       8    8    235776              192                2.90E+03             1.16E+03       7537.68    1.45E+02       3072                 mpirun -np 64 -hostfile nodelist_n0[175-182] ./xhpl
+01/14/18    9          72       8    9    250176              192                3.23E+03             1.29E+03       8100.32    1.43E+02       3456                 mpirun -np 72 -hostfile nodelist_n0[175-183] ./xhpl
+```
