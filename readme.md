@@ -3,7 +3,18 @@ High-Performance LINPACK Tutorial
 
 ## Overview
 
-This document details how to setup and run a simple High-Performance LINPACK (HPL) test on a set of nodes in order to measure performance, specifically, its rate of execution of floating-point operations, by using the nodes to solve a large linear system. This tutorial is tailored to the computing environment (Intel architecture, Scientific Linux 7) in the HPCS division at Lawrence Berkeley National Laboratory at the time of this writing, but the majority can be applied elsewhere. View the sample files for examples.
+This document details how to setup and run a simple High-Performance LINPACK (HPL) test on a set of nodes in order to measure performance, specifically, its rate of execution of floating-point operations, by using the nodes to solve a large linear system. This tutorial is tailored to the computing environment (Intel architecture, Scientific Linux 7) in the HPCS division at Lawrence Berkeley National Laboratory at the time of this writing, but the majority can be applied elsewhere. View the [sample](https://github.com/matthew-li/lbnl_hpl_doc/tree/master/samples) files for examples.
+
+## Table of Contents
+
+1. [Loading Modules](#1-loading-modules)
+2. [Compiling the Test](#2-compiling-the-test)
+3. [Gathering Parameters](#3-gathering-parameters)
+4. [Editing HPL.dat](#4-editing-hpldat)
+5. [Creating a Node List](#5-creating-a-node-list)
+6. [Running the Test](#6-running-the-test)
+7. [Interpreting Output](#7-interpreting-output)
+8. [Example](#8-example)
 
 ## 1. Loading Modules
 
@@ -58,36 +69,36 @@ This value will be the only one to vary between multiple tests on the same clust
 **Cores Per Node**
 
 ```
-lscpu
+lscpu | grep "CPU(s)"
 ```
 
-Look at the value corresponding to `CPU(s)`.
+Record the value corresponding to `CPU(s)`.
 
 ***
 
 **Speed Per Core**
 
 ```
-lscpu
+lscpu | grep "GHz"
 ```
 
-Look at number of GHz in the value corresponding to `Model name`.
+Record the number of GHz in the value corresponding to `Model name`.
 
 ***
 
 **Memory Per Node**
 
 ```
-cat /proc/meminfo
+cat /proc/meminfo | grep "MemTotal"
 ```
 
-Look at `MemTotal` and round down to the closest power of 2 (e.g. 214477800 kB becomes 192000000 kB = 192 GB).
+Record the value corresponding to `MemTotal`, rounded down to the closest power of 2 (e.g. 214477800 kB becomes 192000000 kB = 192 GB).
 
 ***
 
 **Instructions Per Cycle**
 
-Choose either 16 or 32, depending on the machine.
+This value, 16 or 32, is machine-dependent. Look online for the correct value pertaining to the particular CPU (found under `Model name` when determining the Speed Per Core above). For example, Google searches reveal that the Intel X5550 (Nehalem) runs at 4 instructions per cycle and the Intel E5-2670 (Sandy Bridge) runs at 8 instructions per cycle.
 
 ***
 
@@ -103,19 +114,23 @@ Look back at the results of the HPL Calculator. In the bottommost table, we find
 
 `P` and `Q` correspond to the number of process rows and columns, respectively. We want `P` and `Q` to be approximately equal, with `Q` slightly larger than `P`. Compute the square root of the product of the number of nodes and the number of cores per node. Choose `P` and `Q` as close to this value as possible. Set `Ps` and `Qs` in `HPL.dat`.
 
+See the [example](#8-example) for sample values.
+
 ## 5. Creating a Node List
 
 Create a file `nodelist.in` to contain the list of nodes to be included in the test. List each node on a separate line, with the number of cores it has listed next to it, denoted by `slots=`.
 
-Consider a cluster of 5 nodes denoted by `n000i.cluster_name`, where each has 64 cores. Then `nodelist.in` should contain:
+Consider a hypothetical cluster of 5 nodes denoted by `n000i.cluster_name`, where each has `n` cores. Then `nodelist.in` should contain:
 
 ```
-n0000.cluster_name slots=64
-n0001.cluster_name slots=64
-n0002.cluster_name slots=64
-n0003.cluster_name slots=64
-n0004.cluster_name slots=64
+n0000.cluster_name slots=n
+n0001.cluster_name slots=n
+n0002.cluster_name slots=n
+n0003.cluster_name slots=n
+n0004.cluster_name slots=n
 ```
+
+See the [example](#8-example) for sample node lists.
 
 ## 6. Running the Test
 
@@ -145,6 +160,8 @@ Periodically check the progress of a test running in the background using:
 ```
 tail -f output.out
 ```
+
+See the [example](#8-example) for sample commands.
 
 ## 7. Interpreting Output
 
@@ -255,7 +272,11 @@ This may differ in the presence of additional factors: Advanced Vector Extension
 
 Record these results, as well as the parameters used in running the test.
 
-## Example
+See the [example](#8-example) for sample output.
+
+## 8. Example
+
+See the [sample](https://github.com/matthew-li/lbnl_hpl_doc/tree/master/samples) files pertaining to this example.
 
 Suppose we wish to run HPL on n0[175-183].etna0. We login to one of the nodes being tested. Using `lscpu` and `cat /proc/meminfo`, we find that each has Intel(R) Xeon(R) CPU E5-2623 v3 @ 3.00GHz. There are 9 nodes, each with 64 GB of memory and 8 cores running at 3.00 GHz and 16 instructions per cycle.
 
