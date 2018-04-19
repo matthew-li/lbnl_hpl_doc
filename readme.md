@@ -5,6 +5,8 @@ High-Performance LINPACK Tutorial
 
 This document details how to setup and run a simple High-Performance LINPACK (HPL) test on a set of nodes in order to measure performance, specifically, its rate of execution of floating-point operations, by using the nodes to solve a large linear system. This tutorial is tailored to the computing environment (Intel architecture, Scientific Linux 7) in the HPCS division at Lawrence Berkeley National Laboratory at the time of this writing, but the majority can be applied elsewhere. View the [sample](https://github.com/matthew-li/lbnl_hpl_doc/tree/master/samples) files for examples.
 
+Version 1 - April 18th, 2018
+
 ## Table of Contents
 
 1. [Loading Modules](#1-loading-modules)
