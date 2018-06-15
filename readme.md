@@ -94,7 +94,7 @@ Record the number of GHz in the value corresponding to `Model name`.
 cat /proc/meminfo | grep "MemTotal"
 ```
 
-Record the value corresponding to `MemTotal`, rounded down to the closest power of 2 (e.g. 214477800 kB becomes 192000000 kB = 192 GB).
+Record the value corresponding to `MemTotal`, rounded down to the closest well-known multiple of 2 (e.g. 214477800 KB becomes 192000000 KB = 192 GB).
 
 ***
 
