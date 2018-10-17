@@ -25,13 +25,12 @@ Login to one of the nodes in the cluster being tested.
 HPL requires various libraries to run. In particular, a message passing interface and a math kernel library are necessary. In our case, at the time of this writing, each node runs Scientific Linux 7, which contains the requisite libraries, so run the following commands to load the packages and environment variables needed for compilation:
 
 ```
-source ~/.bashrc
 module load intel/2018.1.163
 module load openmpi/2.0.2-intel
 module load mkl/2018.1.163
 ```
 
-You may need to run these each time you login to a node.
+You may need to run these each time you login to a node. These packages will need to be loaded in each node on which HPL runs, so add these lines to your ~/.bashrc file.
 
 ## 2. Compiling the Test
 
